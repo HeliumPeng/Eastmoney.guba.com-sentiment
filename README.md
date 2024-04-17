@@ -1,4 +1,4 @@
-# 东方财富网股吧爬虫
-自己毕设做的爬取股吧舆情信息的爬虫，用来获取舆情数据，获取的数据日期可能会有偏差
-根据网站反爬虫策略的更新，应该很难爬下来所有数据
+# Eastmoney Guba sentiment data
+The crawler of public opinion information is used to obtain public opinion data, and the data date obtained may be biased
 
+Note: According to the update of the site's anti-crawling policy, it should be difficult to climb down all the data
