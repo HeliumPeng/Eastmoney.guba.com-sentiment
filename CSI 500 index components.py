@@ -1,92 +1,92 @@
 import pandas as pd
 import baostock as bs
 
-# 登录系统
+# Login to the system
 lg = bs.login()
 
-# 检查登录是否成功
+# Check if the login was successful
 if lg.error_code == '0':
-    print("Baostock登录成功")
+    print("Baostock login successful")
 else:
-    print(f"Baostock登录失败，错误代码：{lg.error_code}, 错误信息：{lg.error_msg}")
+    print(f"Baostock login failed, error code: {lg.error_code}, error message: {lg.error_msg}")
 
-# 创建日期列表
+# Create a list of dates
 dates = [f"{year}-{month}-30" for year in range(2017, 2023) for month in ["06", "12"]]
 
-# 创建空的DataFrame用于存储结果
+# Create an empty DataFrame to store the results
 result_df = pd.DataFrame()
 
-# 遍历日期列表
+# Iterate through the list of dates
 for date in dates:
-    # 获取沪深300成分股
+    # Get the CSI 300 constituent stocks
     rs = bs.query_zz500_stocks(date=date)
-    print('query_zz500  error_code:'+rs.error_code)
-    print('query_zz500  error_msg:'+rs.error_msg)
+    print('query_zz500 error_code:'+rs.error_code)
+    print('query_zz500 error_msg:'+rs.error_msg)
 
-    # 打印结果集
+    # Print the result set
     zz500_stocks = []
     while (rs.error_code == '0') & rs.next():
-        # 获取一条记录，将记录合并在一起
+        # Get a record and append it to the list
         zz500_stocks.append(rs.get_row_data())
     result = pd.DataFrame(zz500_stocks, columns=rs.fields)
-    # 将结果添加到result_df中
+    # Append the result to result_df
     result_df = pd.concat([result_df, result])
 
-# 确保日期列是日期类型
+# Ensure the date column is of datetime type
 result_df['updateDate'] = pd.to_datetime(result_df['updateDate'])
 
-# 去除2017年6月的数据
+# Remove data from June 2017
 result_df = result_df[~((result_df['updateDate'].dt.year == 2017) & (result_df['updateDate'].dt.month == 6))]
 
-# 将result_df按照300个数据进行分组
+# Group the result_df into groups of 300 data points
 groups = [result_df[i:i+500] for i in range(0, len(result_df), 500)]
 
-# 初始化一个set用于存储第一个组的股票代码
+# Initialize a set to store the stock codes in the first group
 constant_stocks = set(groups[0]['code'])
 
-# 对后续的每个组进行操作
+# Iterate through the subsequent groups
 for group in groups[1:]:
-    # 将当前组的股票代码转换为set，然后与constant_stocks进行交集操作
+    # Convert the stock codes of the current group to a set and perform an intersection with constant_stocks
     constant_stocks = constant_stocks & set(group['code'])
 
-# 创建一个新的DataFrame用于存储始终存在的股票的代码和名称
+# Create a new DataFrame to store the codes and names of stocks that are always present
 constant_stocks_CSI500 = pd.DataFrame()
 
-# 对每个始终存在的股票进行操作
+# Iterate through the stocks that are always present
 for stock in constant_stocks:
-    # 找出该股票的名称
+    # Find the name of the stock
     stock_name = result_df[result_df['code'] == stock]['code_name'].iloc[0]
-    # 将股票的代码和名称添加到constant_stocks_CSI500中
+    # Append the stock code and name to constant_stocks_CSI500
     constant_stocks_CSI500 = constant_stocks_CSI500.append({
         'code': stock,
         'code_name': stock_name
     }, ignore_index=True)
 
-# 创建一个空的DataFrame用于存储每个周期的改变
+# Create an empty DataFrame to store the changes in each period
 changes_df = pd.DataFrame()
 
-# 对每两个相邻的组进行比较
+# Compare each pair of adjacent groups
 for i in range(len(groups) - 1):
-    # 获取当前组和下一组的股票代码
+    # Get the stock codes of the current and next groups
     current_stocks = set(groups[i]['code'])
     next_stocks = set(groups[i+1]['code'])
 
-    # 找出新增和被剔除的股票
+    # Find the added and removed stocks
     added_stocks = next_stocks - current_stocks
     removed_stocks = current_stocks - next_stocks
 
-    # 获取当前组和下一组的日期
+    # Get the dates of the current and next periods
     current_period = groups[i]['updateDate'].min().strftime('%Y-%m-%d')
     next_period = groups[i+1]['updateDate'].min().strftime('%Y-%m-%d')
 
-    # 将改变存入changes_df中
+    # Append the changes to changes_df
     changes_df = changes_df.append({
         'period': f'{current_period} - {next_period}',
         'added_stocks': ', '.join(added_stocks),
         'removed_stocks': ', '.join(removed_stocks)
     }, ignore_index=True)
 
-# 设置changes_df的列名
+# Set the column names for changes_df
 changes_df.columns = ['Period', 'Added Stocks', 'Removed Stocks']
 
 # Split the 'Added Stocks' and 'Removed Stocks' columns and stack them into a single column
@@ -106,8 +106,4 @@ added_df.columns = ['Stock', 'Count']
 removed_df.columns = ['Stock', 'Count']
 
 # Add a new column to indicate whether the stock was added or removed
-added_df['Action'] = 'Added'
-removed_df['Action'] = 'Removed'
-
-# Concatenate the two dataframes
-change_count_df = pd.concat([added_df, removed_df])
+added_df['Action']
